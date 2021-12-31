@@ -1,0 +1,78 @@
+# https://taskfile.dev
+
+version: '3'
+
+vars:
+  VM_DIR: '/Users/venjiang/workspace/vm'
+  VHQA: 'vhq-a'
+  VHQB: 'vhq-b'
+  VHQA_DIR: '{{.VM_DIR}}/{{.VHQA}}'
+  VHQB_DIR: '{{.VM_DIR}}/{{.VHQB}}'
+  ZIPPER_ADDR: '192.168.31.185:9000'
+
+
+tasks:
+  default:
+    cmds:
+      - task -l
+    silent: true
+
+  zipper:
+    dir: cmd/zipper
+    desc: zipper run
+    deps: [zipper-build]
+    cmds:
+      - ./zipper{{exeExt}} -m=dev.json {{.CLI_ARGS}}
+    silent: true
+
+  zipper-build:
+    dir: cmd/zipper
+    desc: zipper build
+    cmds:
+      - go build -ldflags="-s -w" -o zipper{{exeExt}} main.go
+    silent: true
+
+  sender:
+    dir: cmd/sender
+    desc: sender run
+    deps: [sender-build]
+    cmds:
+      - ./sender{{exeExt}} {{.CLI_ARGS}}
+    silent: true
+
+  sender-build:
+    dir: cmd/sender
+    desc: sender build
+    cmds:
+      - go build -ldflags="-s -w" -o sender main.go
+    silent: true
+
+  sender-release:
+    desc: sender release on linux
+    cmds:
+      - go build -ldflags="-s -w" -o release/sender{{exeExt}} cmd/sender/main.go
+    env:
+      GOOS: linux
+      GOARCH: arm64
+    silent: true
+
+  sender-pub-vm:
+    desc: sender publish @vm
+    deps: [sender-release]
+    cmds:
+      - cp ./release/sender{{exeExt}} {{.VHQA_DIR}}
+    silent: true
+
+  sender-exec-vm:
+    desc: sender exec @vm
+    deps: [sender-release]
+    cmds:
+      - multipass exec vhq-a /home/ubuntu/vhq/sender -- -addr={{.ZIPPER_ADDR}}
+    silent: true
+
+  sender-pub:
+    desc: sender publish 
+    deps: [sender-release]
+    cmds:
+      - rysnc -avh ./release/sender{{exeExt}} vhq-a:/home/ubuntu/vhq
+    silent: true

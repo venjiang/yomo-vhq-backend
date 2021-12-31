@@ -64,5 +64,10 @@ func (c *Client) React(packet []byte, svr gnet.Conn) (out []byte, action gnet.Ac
 // Tick fires immediately after the server starts and will fire again
 // following the duration specified by the delay return value.
 func (c *Client) Tick() (delay time.Duration, action gnet.Action) {
+	// c.EventServer.
 	return
+}
+
+func (c *Client) Reconnect() {
+	// TODO 重连
 }

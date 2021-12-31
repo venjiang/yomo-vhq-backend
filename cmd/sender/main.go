@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"os"
 
 	"github.com/rs/zerolog"
@@ -8,10 +9,15 @@ import (
 	"yomo.run/vhq/app"
 )
 
+var addr = flag.String("addr", "tcp://localhost:9000", "zipper address")
+
+func init() {
+	flag.Parse()
+}
+
 func main() {
-	addr := "tcp://localhost:9000"
 	ws := ""
-	conn, err := app.Run(addr, ws)
+	conn, err := app.Run(*addr, ws)
 	if err != nil {
 		panic(err)
 	}
@@ -19,7 +25,7 @@ func main() {
 
 	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-	log.Info().Msgf("connect to %s", addr)
+	log.Info().Msgf("connect to %s", *addr)
 
 	msg := []byte("hello new vhq")
 	err = conn.AsyncWrite(msg)
