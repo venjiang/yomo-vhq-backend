@@ -13,6 +13,7 @@ vars:
 tasks:
   default:
     cmds:
+      - echo {{.Name}}
       - task -l
     silent: true
 
@@ -29,8 +30,7 @@ tasks:
       MESH_ID: Local
       SENDER: localhost:8000
       RECEIVER: localhost:9000
-    deps: [build]
-    desc: exec {{.Name}} 
+    desc: run {{.Name}} 
 
   build:
     desc: '{{.Name}} build'
@@ -58,6 +58,12 @@ tasks:
     cmds:
       - yomo serve -v -c example/sender-8000.yaml -m http://localhost:3001/dev.json
     desc: '{{.Name}} sender '
+
+  clean:
+    desc: clean
+    cmds:
+      - rm -rf release/
+      - rm -rf bin/
   
   release:
     desc: release {{.Name}} 
@@ -74,11 +80,7 @@ tasks:
 
   pub-dev:
     desc: 'publish {{.Name}} to development server'
-    # deps: [release]
+    deps: [release]
     cmds:
-      # - 'rsync -ahzv --delete --exclude .git release/ ubuntu@yomo.teamlint.com:/home/ubuntu/vhq/backend'
-      # - scp -CBr release/* ubuntu@yomo.teamlint.com:/home/ubuntu/vhq/backend
+      - scp -CBr release/* ubuntu@yomo.teamlint.com:/home/ubuntu/vhq/backend
       - ssh ubuntu@yomo.teamlint.com ". ~/.profile;cd /home/ubuntu/vhq/backend;task all"
-      # - ssh ubuntu@yomo.teamlint.com -t "ls -la;echo $PATH"
-      # - 'ssh ubuntu@yomo.teamlint.com -t ". ~/.profile;task -l"'
-    # silent: false
