@@ -1,0 +1,84 @@
+# https://taskfile.dev
+
+version: '3'
+
+output: prefixed
+
+vars:
+  Name: 'vhqd'
+  ExeName: '{{.Name}}{{exeExt}}'
+  ExeDir: bin 
+  ReleaseDir: release 
+
+tasks:
+  default:
+    cmds:
+      - task -l
+    silent: true
+
+  all:
+    cmds:
+      - echo '{{.Name}} service'
+    deps: [receiver,sender,app]
+    desc: '{{.Name}} service'
+
+  run:
+    cmds:
+      - go run cmd/main.go
+    env:
+      MESH_ID: Local
+      SENDER: localhost:8000
+      RECEIVER: localhost:9000
+    deps: [build]
+    desc: exec {{.Name}} 
+
+  build:
+    desc: '{{.Name}} build'
+    cmds:
+      - go build -v -o {{.ExeDir}}/{{.ExeName}} -ldflags "-s -w" cmd/main.go
+    silent: false
+  
+  app:
+    cmds:
+      - '{{.ExeDir}}/{{.ExeName}}'
+    env:
+      MESH_ID: Local
+      SENDER: localhost:8000
+      RECEIVER: localhost:9000
+    deps: [build]
+    desc: exec {{.Name}} 
+    silent: false
+  
+  receiver:
+    cmds:
+      - yomo serve -v -c example/receiver-9000.yaml
+    desc: '{{.Name}} receiver '
+
+  sender:
+    cmds:
+      - yomo serve -v -c example/sender-8000.yaml -m http://localhost:3001/dev.json
+    desc: '{{.Name}} sender '
+  
+  release:
+    desc: release {{.Name}} 
+    cmds:
+      - echo "{{.Name}} release..."
+      - go build -ldflags "-w -s" -o release/{{.Name}} cmd/main.go
+      - cp example/receiver-9000.yaml release/
+      - cp example/sender-8000.yaml release/
+      # - cp Taskfile.yaml release/
+      - echo "{{.Name}} is released."
+    env:
+      GOOS: linux
+      GOARCH: amd64
+
+  pub-dev:
+    desc: 'publish {{.Name}} to development server'
+    # deps: [release]
+    cmds:
+      # - 'rsync -ahzv --delete --exclude .git release/ ubuntu@yomo.teamlint.com:/home/ubuntu/vhq/backend'
+      # - scp -CBr release/* ubuntu@yomo.teamlint.com:/home/ubuntu/vhq/backend
+      - ssh ubuntu@yomo.teamlint.com ". ~/.profile;cd /home/ubuntu/vhq/backend;task all"
+      # - ssh ubuntu@yomo.teamlint.com -t "ls -la;echo $PATH"
+      # - 'ssh ubuntu@yomo.teamlint.com -t ". ~/.profile;task -l"'
+    # silent: false
